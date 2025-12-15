@@ -318,6 +318,36 @@ __kernel void fp32_fma_rate_test(__global float4 *A, int count, __global float4 
     ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
 }
 
+__kernel void fp32_builtin_fma_rate_test(__global float4 *A, int count, __global float4 *ret) {
+    int tid = get_local_id(0);
+    int max_offset = get_local_size(0);
+    __global float4 *local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    float4 v0 = local_a[masked_tid];
+    float4 v1 = local_a[masked_tid + 1];
+    float4 v2 = local_a[masked_tid + 2];
+    float4 v3 = local_a[masked_tid + 3];
+    float4 v4 = local_a[masked_tid + 4];
+    float4 v5 = local_a[masked_tid + 5];
+    float4 v6 = local_a[masked_tid + 6];
+    float4 v7 = local_a[masked_tid + 7];
+    float4 acc = local_a[0];
+
+    for (int i = 0; i < count; i++) {
+	v0 = fma(acc, v0, v0);
+	v1 = fma(acc, v1, v1);
+	v2 = fma(acc, v2, v2);
+	v3 = fma(acc, v3, v3);
+	v4 = fma(acc, v4, v4);
+	v5 = fma(acc, v5, v5);
+	v6 = fma(acc, v6, v6);
+	v7 = fma(acc, v7, v7);
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
 __kernel void fp32_mad_rate_test(__global float4 *A, int count, __global float4 *ret) {
     int tid = get_local_id(0);
     int max_offset = get_local_size(0);
@@ -664,7 +694,7 @@ __kernel void int32_mul_latency_test(__global uint *A, int count, __global uint 
     uint v7 = v1 + v2;
     uint acc = local_a[0];
 
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i += 4) {
         v0 = v7 * v0;
         v1 = v0 * v1;
         v2 = v1 * v2;
@@ -704,3 +734,462 @@ __kernel void int32_mul_latency_test(__global uint *A, int count, __global uint 
 
     ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
 }
+<<<<<<< Updated upstream
+=======
+
+__kernel void fp32_divergence_rate_test(__global float *A, int count, __global float *ret) {
+    int tid = get_local_id(0);
+    int max_offset = get_local_size(0);
+    __global float *local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    float v0 = local_a[masked_tid];
+    float v1 = local_a[masked_tid + 1];
+    float v2 = local_a[masked_tid + 2];
+    float v3 = local_a[masked_tid + 3];
+    float v4 = v0 + v1;
+    float v5 = v0 + v2;
+    float v6 = v0 + v3;
+    float v7 = v1 + v2;
+    float acc = A[0];
+    float op = A[get_global_id(0)];
+
+    if (op < 1.0) {
+        for (int i = 0; i < count; i++) {
+            if (op < 0.5) {
+                v0 += acc;
+                v1 += acc;
+                v2 += acc;
+                v3 += acc;
+                v4 += acc;
+                v5 += acc;
+                v6 += acc;
+                v7 += acc;
+            }
+            else
+            {
+                v0 *= acc;
+                v1 *= acc;
+                v2 *= acc;
+                v3 *= acc;
+                v4 *= acc;
+                v5 *= acc;
+                v6 *= acc;
+                v7 *= acc;
+            }
+        }
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
+__kernel void fp32_partition_rate_test(__global float *A, int count, __global float *ret) {
+    int tid = get_local_id(0);
+    int max_offset = get_local_size(0);
+    __global float *local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    float v0 = local_a[masked_tid];
+    float v1 = local_a[masked_tid + 1];
+    float v2 = local_a[masked_tid + 2];
+    float v3 = local_a[masked_tid + 3];
+    float v4 = v0 + v1;
+    float v5 = v0 + v2;
+    float v6 = v0 + v3;
+    float v7 = v1 + v2;
+    float acc = A[0];
+    float op = A[get_global_id(0)];
+
+    if (op < 1.0) {
+        for (int i = 0; i < count; i++) {
+            v0 += acc;
+            v1 += acc;
+            v2 += acc;
+            v3 += acc;
+            v4 += acc;
+            v5 += acc;
+            v6 += acc;
+            v7 += acc;
+        }
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
+/// Scalar latency
+__kernel void int32_add_scalar_latency_test(__global uint* A, int count, __global uint* ret) {
+    int tid = 0;
+    int max_offset = get_local_size(0);
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    uint v0 = A[masked_tid];
+    uint v1 = A[masked_tid + 1];
+    uint v2 = A[masked_tid + 2];
+    uint v3 = A[masked_tid + 3];
+    uint v4 = v0 + v1;
+    uint v5 = v0 + v2;
+    uint v6 = v0 + v3;
+    uint v7 = v1 + v2;
+
+    for (int i = 0; i < count; i += 4) {
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
+__kernel void int32_mul_scalar_latency_test(__global uint* A, int count, __global uint* ret) {
+    int tid = 0;
+    int max_offset = get_local_size(0);
+    __global uint* local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    uint v0 = local_a[masked_tid];
+    uint v1 = local_a[masked_tid + 1];
+    uint v2 = local_a[masked_tid + 2];
+    uint v3 = local_a[masked_tid + 3];
+    uint v4 = v0 + v1;
+    uint v5 = v0 + v2;
+    uint v6 = v0 + v3;
+    uint v7 = v1 + v2;
+    uint acc = local_a[0];
+
+    for (int i = 0; i < count; i += 4) {
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
+__kernel void fp32_add_scalar_latency_test(__global float* A, int count, __global float* ret) {
+    int tid = 0;
+    int max_offset = get_local_size(0);
+    __global float* local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    float v0 = local_a[masked_tid];
+    float v1 = local_a[masked_tid + 1];
+    float v2 = local_a[masked_tid + 2];
+    float v3 = local_a[masked_tid + 3];
+    float v4 = v0 + v1;
+    float v5 = v0 + v2;
+    float v6 = v0 + v3;
+    float v7 = v1 + v2;
+    float acc = local_a[0];
+
+    for (int i = 0; i < count; i += 8) {
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+
+        v0 = v7 + v0;
+        v1 = v0 + v1;
+        v2 = v1 + v2;
+        v3 = v2 + v3;
+        v4 = v3 + v4;
+        v5 = v4 + v5;
+        v6 = v5 + v6;
+        v7 = v6 + v7;
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
+__kernel void fp32_fma_scalar_latency_test(__global float* A, int count, __global float* ret) {
+    int tid = 0;
+    int max_offset = get_local_size(0);
+    __global float* local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    float v0 = local_a[masked_tid];
+    float v1 = local_a[masked_tid + 1];
+    float v2 = local_a[masked_tid + 2];
+    float v3 = local_a[masked_tid + 3];
+    float v4 = v0 + v1;
+    float v5 = v0 + v2;
+    float v6 = v0 + v3;
+    float v7 = v1 + v2;
+    float acc = local_a[0];
+
+    for (int i = 0; i < count; i += 4) {
+        v0 = v7 + acc * v0;
+        v1 = v0 + acc * v1;
+        v2 = v1 + acc * v2;
+        v3 = v2 + acc * v3;
+        v4 = v3 + acc * v4;
+        v5 = v4 + acc * v5;
+        v6 = v5 + acc * v6;
+        v7 = v6 + acc * v7;
+
+        v0 = v7 + acc * v0;
+        v1 = v0 + acc * v1;
+        v2 = v1 + acc * v2;
+        v3 = v2 + acc * v3;
+        v4 = v3 + acc * v4;
+        v5 = v4 + acc * v5;
+        v6 = v5 + acc * v6;
+        v7 = v6 + acc * v7;
+
+        v0 = v7 + acc * v0;
+        v1 = v0 + acc * v1;
+        v2 = v1 + acc * v2;
+        v3 = v2 + acc * v3;
+        v4 = v3 + acc * v4;
+        v5 = v4 + acc * v5;
+        v6 = v5 + acc * v6;
+        v7 = v6 + acc * v7;
+
+        v0 = v7 + acc * v0;
+        v1 = v0 + acc * v1;
+        v2 = v1 + acc * v2;
+        v3 = v2 + acc * v3;
+        v4 = v3 + acc * v4;
+        v5 = v4 + acc * v5;
+        v6 = v5 + acc * v6;
+        v7 = v6 + acc * v7;
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
+__kernel void fp32_mul_scalar_latency_test(__global float* A, int count, __global float* ret) {
+    int tid = 0;
+    int max_offset = get_local_size(0);
+    __global float* local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    float v0 = local_a[masked_tid];
+    float v1 = local_a[masked_tid + 1];
+    float v2 = local_a[masked_tid + 2];
+    float v3 = local_a[masked_tid + 3];
+    float v4 = v0 + v1;
+    float v5 = v0 + v2;
+    float v6 = v0 + v3;
+    float v7 = v1 + v2;
+    float acc = local_a[0];
+
+    for (int i = 0; i < count; i += 4) {
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+
+__kernel void fp32_mul_latency_test(__global float* A, int count, __global float* ret) {
+    int tid = get_local_id(0);
+    int max_offset = get_local_size(0);
+    __global float* local_a = A;
+
+    int masked_tid = tid & (rate_local_mem_test_size - 1);
+    float v0 = local_a[masked_tid];
+    float v1 = local_a[masked_tid + 1];
+    float v2 = local_a[masked_tid + 2];
+    float v3 = local_a[masked_tid + 3];
+    float v4 = v0 + v1;
+    float v5 = v0 + v2;
+    float v6 = v0 + v3;
+    float v7 = v1 + v2;
+    float acc = local_a[0];
+
+    for (int i = 0; i < count; i += 4) {
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+
+        v0 = v7 * v0;
+        v1 = v0 * v1;
+        v2 = v1 * v2;
+        v3 = v2 * v3;
+        v4 = v3 * v4;
+        v5 = v4 * v5;
+        v6 = v5 * v6;
+        v7 = v6 * v7;
+    }
+
+    ret[get_global_id(0)] = v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7;
+}
+>>>>>>> Stashed changes

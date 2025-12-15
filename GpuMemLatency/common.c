@@ -3,6 +3,7 @@
 cl_device_id selected_device_id;
 cl_platform_id selected_platform_id;
 cl_ulong max_global_test_size;
+int saveprogram = 0;
 
 // Fills an array using Sattolo's algo
 void FillPatternArr(uint32_t* pattern_arr, uint32_t list_size, uint32_t byte_increment) {
@@ -267,7 +268,7 @@ get_context_from_user_end:
     return context;
 }
 
-cl_program build_program(cl_context context, const char* fname)
+cl_program build_program(cl_context context, const char* fname, const char *params)
 {
     cl_int ret;
     FILE* fp = NULL;
@@ -283,7 +284,7 @@ cl_program build_program(cl_context context, const char* fname)
     fclose(fp);
 
     cl_program program = clCreateProgramWithSource(context, 1, (const char**)&source_str, (const size_t*)&source_size, &ret);
-    ret = clBuildProgram(program, 1, &selected_device_id, NULL, NULL, NULL);
+    ret = clBuildProgram(program, 1, &selected_device_id, params, NULL, NULL);
     //fprintf(stderr, "clBuildProgram %s returned %d\n", fname, ret);
     if (ret == -11)
     {
@@ -300,7 +301,11 @@ cl_program build_program(cl_context context, const char* fname)
     return program;
 }
 
+<<<<<<< Updated upstream
 void write_program(cl_program program)
+=======
+void write_program(cl_program program, const char *name)
+>>>>>>> Stashed changes
 {
     size_t* binarySizes = NULL;
     size_t nDevices = 0;
@@ -345,7 +350,11 @@ void write_program(cl_program program)
 
     for (int i = 0; i < nDevices; i++)
     {
+<<<<<<< Updated upstream
         snprintf(fname, 254, "prog%d", i);
+=======
+        snprintf(fname, 254, "prog%d_%s", i, name);
+>>>>>>> Stashed changes
         FILE* dst = fopen(fname, "w");
         fwrite(binaries[i], 1, binarySizes[i], dst);
         fclose(dst);
@@ -357,3 +366,17 @@ getProgram_Fail:
     free(binaries);
     free(binarySizes);
 }
+<<<<<<< Updated upstream
+=======
+
+// Given last run settings, return target iteration count that should make the next run
+// go for approximately TARGET_TIME_MS
+uint32_t adjust_iterations(uint32_t iterations, uint64_t time_ms)
+{
+    uint32_t chase_iterations = (uint32_t)((float)iterations * TARGET_TIME_MS / (float)time_ms);
+    if (time_ms == 0) chase_iterations = iterations * 100;
+    //fprintf(stderr, "Kernel took %llu ms. Setting iterations = %u\n", time_ms, chase_iterations);
+
+    return chase_iterations;
+}
+>>>>>>> Stashed changes

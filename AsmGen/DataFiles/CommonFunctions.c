@@ -7,6 +7,10 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
+<<<<<<< Updated upstream
+=======
+#include <pthread.h>
+>>>>>>> Stashed changes
 
 void setAffinity(int core) {
     cpu_set_t cpuset;
@@ -17,6 +21,17 @@ void setAffinity(int core) {
 }
 #endif
 
+<<<<<<< Updated upstream
+=======
+struct ThreadData {
+    int* A;
+    int* B;
+    float* fpArr;
+    uint32_t list_size;
+    uint64_t structIterations;
+};
+
+>>>>>>> Stashed changes
 void printCsvHeader(uint32_t* xCounts, uint32_t xLen) {
     printf("x");
     for (uint32_t testSizeIdx = 0; testSizeIdx < xLen; testSizeIdx++) {

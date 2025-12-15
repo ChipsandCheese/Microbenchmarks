@@ -4,17 +4,35 @@ namespace AsmGen
 {
     public class TakenBranchBufferTest : UarchTest
     {
-        public TakenBranchBufferTest(int low, int high, int step)
+        private bool initialDependentBranch;
+        public TakenBranchBufferTest(int low, int high, int step, bool initialDependentBranch)
         {
             this.Counts = UarchTestHelpers.GenerateCountArray(low, high, step);
-            this.Prefix = "tbb";
-            this.Description = "Taken Branch Buffer Test (taken branches pending retire)";
+            this.Prefix = "tbb" + (initialDependentBranch ? "db" : string.Empty);
+            this.Description = "Taken Branch Buffer Test (taken branches pending retire)" + (initialDependentBranch ? ", preceded by dependent branch" : string.Empty);
             this.FunctionDefinitionParameters = "uint64_t iterations, int *arr";
             this.GetFunctionCallParameters = "structIterations, A";
             this.DivideTimeByCount = false;
+            this.initialDependentBranch = initialDependentBranch;
         }
 
-        public override void GenerateX86GccAsm(StringBuilder sb)
+        public override bool SupportsIsa(IUarchTest.ISA isa)
+        {
+            if (this.initialDependentBranch && isa != IUarchTest.ISA.aarch64) return false;
+            if (isa == IUarchTest.ISA.amd64) return true;
+            if (isa == IUarchTest.ISA.aarch64) return true;
+            // if (isa == IUarchTest.ISA.mips64) return true;
+            // if (isa == IUarchTest.ISA.riscv) return true;
+            return false;
+        }
+
+        public override void GenerateAsm(StringBuilder sb, IUarchTest.ISA isa)
+        {
+            if (isa == IUarchTest.ISA.amd64) GenerateX86GccAsm(sb);
+            else if (isa == IUarchTest.ISA.aarch64) GenerateArmAsm(sb);
+        }
+
+        public void GenerateX86GccAsm(StringBuilder sb)
         {
             for (int i = 0; i < Counts.Length; i++)
             {
@@ -49,7 +67,7 @@ namespace AsmGen
                 sb.AppendLine("  mov (%rdx,%rsi,4), %esi");
                 sb.AppendLine("\n" + funcName + "start:");
                 sb.AppendLine("  mov (%rdx,%rdi,4), %edi");
-                for (int fillerIdx = 0 ; fillerIdx < Counts[i]; fillerIdx++)
+                for (int fillerIdx = 0; fillerIdx < Counts[i]; fillerIdx++)
                 {
                     string jumpLabel = $"{funcName}_edi_target{fillerIdx}";
                     sb.AppendLine($"  jmp {jumpLabel}");
@@ -85,62 +103,9 @@ namespace AsmGen
             }
         }
 
-        public override void GenerateX86NasmAsm(StringBuilder sb)
+        public void GenerateArmAsm(StringBuilder sb)
         {
-            for (int i = 0; i < Counts.Length; i++)
-            {
-                string funcName = Prefix + Counts[i];
-                sb.AppendLine("\n" + funcName + ":");
-                sb.AppendLine("  push rsi");
-                sb.AppendLine("  push rdi");
-                sb.AppendLine("  push r15");
-                sb.AppendLine("  push r14");
-                sb.AppendLine("  push r13");
-                sb.AppendLine("  push r12");
-                sb.AppendLine("  push r11");
-                sb.AppendLine("  xor r15, r15");
-                sb.AppendLine("  mov r14, 1");
-                sb.AppendLine("  mov r13, 2");
-                sb.AppendLine("  mov r12, 3");
-                sb.AppendLine("  mov r11, 4");
-                sb.AppendLine("  xor rdi, rdi");
-                sb.AppendLine("  mov esi, 64");
-                sb.AppendLine("\n" + funcName + "start:");
-                sb.AppendLine("  mov edi, [rdx + rdi * 4]");
-                for (int fillerIdx = 0; fillerIdx < Counts[i]; fillerIdx++)
-                {
-                    string jumpLabel = $"{funcName}_edi_target{fillerIdx}";
-                    sb.AppendLine($"  jmp {jumpLabel}");
-                    sb.AppendLine($"align 16");
-                    if (fillerIdx % 2 == 0) sb.AppendLine("  nop");
-                    sb.AppendLine($"{jumpLabel}:");
-                }
-
-                sb.AppendLine("  mov esi, [rdx + rsi * 4]");
-                for (int fillerIdx = 0; fillerIdx < Counts[i]; fillerIdx++)
-                {
-                    string jumpLabel = $"{funcName}_esi_target{fillerIdx}";
-                    sb.AppendLine($"  jmp {jumpLabel}");
-                    sb.AppendLine($"align 16");
-                    if (fillerIdx % 2 == 0) sb.AppendLine("  nop");
-                    sb.AppendLine($"{jumpLabel}:");
-                }
-
-                sb.AppendLine("  dec rcx");
-                sb.AppendLine("  jne " + funcName + "start");
-                sb.AppendLine("  pop r11");
-                sb.AppendLine("  pop r12");
-                sb.AppendLine("  pop r13");
-                sb.AppendLine("  pop r14");
-                sb.AppendLine("  pop r15");
-                sb.AppendLine("  pop rdi");
-                sb.AppendLine("  pop rsi");
-                sb.AppendLine("  ret\n\n");
-            }
-        }
-
-        public override void GenerateArmAsm(StringBuilder sb)
-        {
+            string dependentBranch = this.initialDependentBranch ? UarchTestHelpers.GetArmDependentBranch(this.Prefix) : null;
             for (int i = 0; i < Counts.Length; i++)
             {
                 string funcName = Prefix + Counts[i];
@@ -162,7 +127,7 @@ namespace AsmGen
                 sb.AppendLine("  mov w26, 0x40");
                 sb.AppendLine("\n" + funcName + "start:");
                 sb.AppendLine("  ldr w25, [x1, w25, uxtw #2]"); // current = A[current]
-
+                if (this.initialDependentBranch) sb.AppendLine(dependentBranch);
                 for (int fillerIdx = 0; fillerIdx < Counts[i]; fillerIdx++)
                 {
                     string jumpLabel = $"{funcName}_w25_target{fillerIdx}";
@@ -171,6 +136,7 @@ namespace AsmGen
                 }
 
                 sb.AppendLine("  ldr w26, [x1, w26, uxtw #2]");
+                if (this.initialDependentBranch) sb.AppendLine(dependentBranch);
                 for (int fillerIdx = 0; fillerIdx < Counts[i]; fillerIdx++)
                 {
                     string jumpLabel = $"{funcName}_w26_target{fillerIdx}";
@@ -187,6 +153,8 @@ namespace AsmGen
                 sb.AppendLine("  add sp, sp, #0x50");
                 sb.AppendLine("  ret\n\n");
             }
+
+            if (this.initialDependentBranch) sb.AppendLine(UarchTestHelpers.GetArmDependentBranchTarget(this.Prefix));
         }
     }
 }

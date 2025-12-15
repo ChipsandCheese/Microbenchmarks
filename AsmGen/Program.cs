@@ -17,6 +17,7 @@ namespace AsmGen
         static void Main(string[] args)
         {
             List<IUarchTest> tests = new List<IUarchTest>();
+<<<<<<< Updated upstream
             tests.Add(new RobTest(64, 512, 1));
             tests.Add(new ZeroRobTest(128, 384, 1));
             tests.Add(new IntRfTest(2, 256, 1));
@@ -47,6 +48,8 @@ namespace AsmGen
             tests.Add(new Fma256SchedTest(4, 200, 1));
             tests.Add(new CvtSchedTest(4, 64, 1));
             tests.Add(new Fadd128RfTest(4, 128, 1));
+=======
+>>>>>>> Stashed changes
             tests.Add(new BtbTest(4, BtbTest.BranchType.Unconditional));
             tests.Add(new BtbTest(8, BtbTest.BranchType.Unconditional));
             tests.Add(new BtbTest(16, BtbTest.BranchType.Unconditional));
@@ -56,6 +59,7 @@ namespace AsmGen
             tests.Add(new BtbTest(8, BtbTest.BranchType.Conditional));
             tests.Add(new BtbTest(16, BtbTest.BranchType.Conditional));
             tests.Add(new BtbTest(32, BtbTest.BranchType.Conditional));
+<<<<<<< Updated upstream
             tests.Add(new ReturnStackTest(1, 128, 1));
             tests.Add(new BranchBufferTest(1, 96, 1));
             tests.Add(new IndirectBranchTest(false));
@@ -75,6 +79,9 @@ namespace AsmGen
             tests.Add(new AddvNsq(8, 48, 1, 60));
             tests.Add(new StoreNsq(8, 30, 1)); // x2
             tests.Add(new LoadNsq(8, 30, 1)); // x2
+=======
+            tests.Add(new BranchHistoryTest());
+>>>>>>> Stashed changes
 
             List<Task> tasks = new List<Task>();
             tasks.Add(Task.Run(() => GenerateCFile(tests, IUarchTest.ISA.amd64)));
@@ -97,12 +104,25 @@ namespace AsmGen
             sb.AppendLine("#define _GNU_SOURCE");
             sb.AppendLine("#include <stdio.h>\n#include<stdint.h>\n#include<sys/time.h>\n#include <stdlib.h>\n#include <string.h>\n#include <time.h>\n");
             sb.AppendLine("#pragma GCC diagnostic ignored \"-Wattributes\"");
+<<<<<<< Updated upstream
             string commonFunctions = File.ReadAllText($"{DataFilesDir}\\CommonFunctions.c");
             sb.AppendLine(commonFunctions);
             foreach (IUarchTest test in tests)
             {
                 if (test.SupportsIsa(isa)) test.GenerateExternLines(sb);
                 Console.WriteLine("Test " + test.Prefix + " supports ISA " + isa);
+=======
+            string commonFunctions = File.ReadAllText(Path.Combine(DataFilesDir, "CommonFunctions.c"));
+            sb.AppendLine(commonFunctions);
+
+            foreach (IUarchTest test in tests)
+            {
+                if (test.SupportsIsa(isa))
+                {
+                    test.GenerateExternLines(sb);
+                    Console.WriteLine("Test " + test.Prefix + " supports ISA " + isa);
+                }
+>>>>>>> Stashed changes
             }
 
             // no indexed addressing mode on these architectures, so make sure we can do pointer
@@ -113,7 +133,11 @@ namespace AsmGen
             }
 
             AddCommonInitCode(sb, tests, isa);
+<<<<<<< Updated upstream
             foreach(IUarchTest test in tests)
+=======
+            foreach (IUarchTest test in tests)
+>>>>>>> Stashed changes
             {
                 if (test.SupportsIsa(isa)) test.GenerateTestBlock(sb, isa);
             }
@@ -125,12 +149,37 @@ namespace AsmGen
 
         static void GenerateAsmFile(List<IUarchTest> tests, IUarchTest.ISA isa)
         {
+<<<<<<< Updated upstream
+=======
+            string filename = "clammicrobench_" + isa.ToString() + ".s";
+>>>>>>> Stashed changes
             StringBuilder sb = new StringBuilder();
             sb.AppendLine(".text");
 
             if (isa == IUarchTest.ISA.mips64)
             {
                 UarchTest.GenerateMipsPrepArrayFunction(sb);
+<<<<<<< Updated upstream
+=======
+            }
+            else if (isa == IUarchTest.ISA.riscv)
+            {
+                UarchTest.GenerateRiscvPrepArrayFunction(sb);
+            }
+
+            File.WriteAllText(filename, sb.ToString());
+            sb.Clear();
+
+            foreach (IUarchTest test in tests)
+            {
+                if (test.SupportsIsa(isa))
+                {
+                    sb.Clear();
+                    test.GenerateAsmGlobalLines(sb);
+                    test.GenerateAsm(sb, isa);
+                    File.AppendAllText(filename, sb.ToString());
+                }
+>>>>>>> Stashed changes
             }
             else if (isa == IUarchTest.ISA.riscv)
             {
@@ -156,17 +205,31 @@ namespace AsmGen
                 sb.AppendLine(isa.ToString() + ":");
                 if (isa == IUarchTest.ISA.aarch64)
                 {
+<<<<<<< Updated upstream
                     sb.AppendLine($"\tgcc -march=armv8.5-a+aes clammicrobench_{isa.ToString()}.c clammicrobench_{isa.ToString()}.s -o cb");
+=======
+                    sb.AppendLine($"\tgcc -march=armv8.5-a+aes clammicrobench_{isa.ToString()}.c clammicrobench_{isa.ToString()}.s -o cb -static");
+>>>>>>> Stashed changes
                     // hack for stupid compilers that need a ton of flags to do basic things
                     sb.AppendLine("android:");
                     sb.AppendLine("\tclang -march=armv8.3-a -mfpu=neon-fp-armv8 clammicrobench_aarch64.c clammicrobench_aarch64.s -o cb");
                 }
+<<<<<<< Updated upstream
                 else sb.AppendLine($"\tgcc clammicrobench_{isa.ToString()}.c clammicrobench_{isa.ToString()}.s -o cb");
+=======
+                else sb.AppendLine($"\tgcc -pthread clammicrobench_{isa.ToString()}.c clammicrobench_{isa.ToString()}.s -o cb");
+>>>>>>> Stashed changes
             }
 
             sb.AppendLine("win64:");
             sb.AppendLine($"\tx86_64-w64-mingw32-gcc clammicrobench_{IUarchTest.ISA.amd64.ToString()}.c clammicrobench_{IUarchTest.ISA.amd64.ToString()}.s -o cb.exe");
 
+<<<<<<< Updated upstream
+=======
+            sb.AppendLine("clean:");
+            sb.AppendLine("\trm clammicrobench_* cb");
+
+>>>>>>> Stashed changes
             File.WriteAllText("Makefile", sb.ToString());
         }
 
@@ -176,7 +239,11 @@ namespace AsmGen
         {
             sb.AppendLine("int main(int argc, char *argv[]) {");
             sb.AppendLine($"  uint64_t time_diff_ms, iterations = {iterations}, structIterations = {structTestIterations}, tmp;");
+<<<<<<< Updated upstream
             sb.AppendLine("  double latency; int *A = NULL, *B = NULL; float *fpArr = NULL; char *test_name = NULL; int core_affinity = -1;");
+=======
+            sb.AppendLine("  double latency; int *A = NULL, *B = NULL; float *fpArr = NULL; char *test_name = NULL; int core_affinity = -1; int threads = 1;");
+>>>>>>> Stashed changes
             sb.AppendLine("  uint64_t tmpsink;");
             sb.AppendLine("  uint32_t list_size = " + latencyListSize + ";");
 
@@ -199,9 +266,18 @@ namespace AsmGen
             sb.AppendLine("        if (strncmp(arg, \"iterations\", 10) == 0) { argIdx++; iterations = 100 * atoi(argv[argIdx]); }");
             sb.AppendLine("        if (strncmp(arg, \"listsize\", 8) == 0) { argIdx++; list_size = atoi(argv[argIdx]); }");
             sb.AppendLine("        if (strncmp(arg, \"affinity\", 8) == 0) { argIdx++; core_affinity = atoi(argv[argIdx]); }");
+<<<<<<< Updated upstream
             sb.AppendLine("      }"); // end -arg handling if
             sb.AppendLine("    }"); // end args handling for loop
 
+=======
+            sb.AppendLine("        if (strncmp(arg, \"threads\", 7) == 0) { argIdx++; threads = atoi(argv[argIdx]); }");
+            sb.AppendLine("      }"); // end -arg handling if
+            sb.AppendLine("    }"); // end args handling for loop
+
+            sb.AppendLine("    if (test_name == NULL) { fprintf(stderr, \"No test specified\\n\"); return 0; }");
+
+>>>>>>> Stashed changes
             // Optional affinity setting for certain troublesome platforms
             // don't need a version that uses Windows affinity APIs because Windows platforms never have this issue
             sb.AppendLine("#ifndef __MINGW32__");
@@ -237,7 +313,11 @@ namespace AsmGen
             sb.AppendLine("  posix_memalign((void **)&B, 64, sizeof(int) * list_size);\n");
             sb.AppendLine("#endif");
             sb.AppendLine("  for (int i = 0; i < list_size; i++) { B[i] = i; }\n");
-            sb.AppendLine("  fpArr = (float*)malloc(sizeof(float) * list_size);\n");
+            sb.AppendLine("#ifdef _WIN32");
+            sb.AppendLine("  fpArr = (float*)_aligned_malloc(sizeof(float) * list_size, 64);\n");
+            sb.AppendLine("#else");
+            sb.AppendLine("  posix_memalign((void **)&fpArr, 64, sizeof(float) * list_size);");
+            sb.AppendLine("#endif");
             sb.AppendLine("  for (int i = 0;i < list_size; i++) { fpArr[i] = i + .1; }\n");
         }
     }

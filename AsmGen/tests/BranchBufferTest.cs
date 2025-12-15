@@ -5,19 +5,25 @@ namespace AsmGen
     public class BranchBufferTest : UarchTest
     {
         private bool mixNops;
-        public BranchBufferTest(int low, int high, int step, bool mixNops = false)
+        private bool initialDependentBranch;
+        public BranchBufferTest(int low, int high, int step, bool mixNops = false, bool initialDependentBranch = false)
         {
             this.Counts = UarchTestHelpers.GenerateCountArray(low, high, step);
-            this.Prefix = "bob";
-            this.Description = "Branch Order Buffer Test (not-taken branches pending retire)";
+            this.Prefix = "bob" + (initialDependentBranch ? "db" : string.Empty);
+            this.Description = "Branch Order Buffer Test (not-taken branches pending retire)" + (initialDependentBranch ? ", preceded by dependent branch" : string.Empty); ;
             this.FunctionDefinitionParameters = "uint64_t iterations, int *arr";
             this.GetFunctionCallParameters = "structIterations, A";
             this.DivideTimeByCount = false;
             this.mixNops = mixNops;
+            this.initialDependentBranch = initialDependentBranch;
         }
 
         public override bool SupportsIsa(IUarchTest.ISA isa)
         {
+<<<<<<< Updated upstream
+=======
+            if (this.initialDependentBranch && isa != IUarchTest.ISA.aarch64) return false;
+>>>>>>> Stashed changes
             if (isa == IUarchTest.ISA.amd64) return true;
             if (isa == IUarchTest.ISA.aarch64) return true;
             if (isa == IUarchTest.ISA.mips64) return true;
@@ -33,6 +39,10 @@ namespace AsmGen
             else if (isa == IUarchTest.ISA.aarch64)
             {
                 GenerateArmAsm(sb);
+<<<<<<< Updated upstream
+=======
+                if (this.initialDependentBranch) sb.AppendLine(UarchTestHelpers.GetArmDependentBranchTarget(this.Prefix));
+>>>>>>> Stashed changes
             }
             else if (isa == IUarchTest.ISA.mips64)
             {
@@ -114,6 +124,7 @@ namespace AsmGen
 
         public void GenerateArmAsm(StringBuilder sb)
         {
+            string dependentBranch = this.initialDependentBranch ? UarchTestHelpers.GetArmDependentBranch(this.Prefix) : null;
             for (int i = 0; i < Counts.Length; i++)
             {
                 string funcName = Prefix + Counts[i];
@@ -135,7 +146,7 @@ namespace AsmGen
                 sb.AppendLine("  mov w26, 0x40");
                 sb.AppendLine("\n" + funcName + "start:");
                 sb.AppendLine("  ldr w25, [x1, w25, uxtw #2]"); // current = A[current]
-
+                if (this.initialDependentBranch) sb.AppendLine(dependentBranch);
                 for (int fillerIdx = 0; fillerIdx < Counts[i]; fillerIdx++)
                 {
                     string jumpLabel = $"{funcName}_w25_target{fillerIdx}";
@@ -145,6 +156,7 @@ namespace AsmGen
                 }
 
                 sb.AppendLine("  ldr w26, [x1, w26, uxtw #2]");
+                if (this.initialDependentBranch) sb.AppendLine(dependentBranch);
                 for (int fillerIdx = 0; fillerIdx < Counts[i]; fillerIdx++)
                 {
                     string jumpLabel = $"{funcName}_w26_target{fillerIdx}";

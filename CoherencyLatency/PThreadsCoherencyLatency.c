@@ -20,28 +20,45 @@
 typedef struct LatencyThreadData {
     uint64_t start;
     uint64_t iterations;
+<<<<<<< Updated upstream
     uint64_t *target;
+=======
+    volatile uint64_t *target;
+>>>>>>> Stashed changes
     unsigned int processorIndex;
 } LatencyData;
 
+typedef struct LatencyPairRunData {
+    uint32_t processor1;
+    uint32_t processor2;
+    uint64_t iter;
+    float result;
+    uint64_t *target;
+} LatencyPairRunData;
+
 void *LatencyTestThread(void *param);
-float RunTest(unsigned int processor1, unsigned int processor2, uint64_t iter);
-uint64_t *bouncy;
-uint64_t *bouncyBase;
+void *NoLockLatencyTestThread(void *param);
+void *(*testFunc)(void *) = LatencyTestThread;
+void *RunTest(void *param);
 
 int main(int argc, char *argv[]) {
     float **latencies;
-    int numProcs, offsets = 1;
+    int *parallelTestState;
+    int numProcs, offsets = 1, parallelismFactor = 1;
     uint64_t iter = ITERATIONS;
+    uint64_t *bouncyArr;
 
     numProcs = get_nprocs();
     fprintf(stderr, "Number of CPUs: %u\n", numProcs);
 
+<<<<<<< Updated upstream
     if (0 != posix_memalign((void **)(&bouncyBase), 4096, 4096)) {
         fprintf(stderr, "Could not allocate aligned mem\n");
         return 0;
     }
 
+=======
+>>>>>>> Stashed changes
     for (int argIdx = 1; argIdx < argc; argIdx++) {
         if (*(argv[argIdx]) == '-') {
             char* arg = argv[argIdx] + 1;
@@ -50,14 +67,21 @@ int main(int argc, char *argv[]) {
                 iter = atoi(argv[argIdx]);
                 fprintf(stderr, "%lu iterations requested\n", iter);
             }
+<<<<<<< Updated upstream
             else if (strncmp(arg, "bounce", 6) == 0) {
                 fprintf(stderr, "Bouncy\n");
+=======
+            else if (strncmp(arg, "nolock", 6) == 0) {
+                fprintf(stderr, "No locks, plain loads and stores\n");
+                testFunc = NoLockLatencyTestThread;
+>>>>>>> Stashed changes
             }
             else if (strncmp(arg, "offset", 6) == 0) {
                 argIdx++;
                 offsets = atoi(argv[argIdx]);
                 fprintf(stderr, "Offsets: %d\n", offsets);
             }
+<<<<<<< Updated upstream
         }
     }
 
@@ -72,10 +96,97 @@ int main(int argc, char *argv[]) {
         for (int i = 0;i < numProcs; i++) {
             for (int j = 0;j < numProcs; j++) {
                 latenciesPtr[j + i * numProcs] = i == j ? 0 : RunTest(i, j, iter);
+=======
+            else if (strncmp(arg, "parallel", 8) == 0) {
+                argIdx++;
+                parallelismFactor = atoi(argv[argIdx]);
+                fprintf(stderr, "Will go for %d runs in parallel\n", parallelismFactor);
+>>>>>>> Stashed changes
             }
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    latencies = (float **)malloc(sizeof(float *) * offsets);
+    parallelTestState = (int *)malloc(sizeof(int) * numProcs * numProcs);
+    memset(latencies, 0, sizeof(float) * offsets);
+    if (0 != posix_memalign((void **)(&bouncyArr), 4096, 4096 * parallelismFactor)) {
+        fprintf(stderr, "Could not allocate aligned mem\n");
+        return 0;
+    } 
+
+    LatencyPairRunData *pairRunData = (LatencyPairRunData *)malloc(sizeof(LatencyPairRunData) * parallelismFactor);
+
+    for (int offsetIdx = 0; offsetIdx < offsets; offsetIdx++) {
+        latencies[offsetIdx] = (float *)malloc(sizeof(float) * numProcs * numProcs);
+        memset(parallelTestState, 0, sizeof(int) * numProcs * numProcs);
+        float *latenciesPtr = latencies[offsetIdx];
+
+        while (1) {
+            // select parallelismFactor threads
+            int selectedParallelTestCount = 0;
+            memset(pairRunData, 0, sizeof(LatencyPairRunData) * parallelismFactor);
+            for (int i = 0;i < numProcs && selectedParallelTestCount < parallelismFactor; i++) {
+                for (int j = 0;j < numProcs && selectedParallelTestCount < parallelismFactor; j++) {
+                    if (j == i) { latenciesPtr[j + i * numProcs] = 0; continue; }
+                    if (parallelTestState[j + i * numProcs] == 1) {
+                        fprintf(stderr, "Thread unexpectedly did not complete\n");
+                        exit(0);
+                    }
+                    if (parallelTestState[j + i * numProcs] == 0) {
+                        // neither thread can already have a pending run
+                        int validPair = 1;
+                        for (int c = 0; c < numProcs; c++) {
+                            if (parallelTestState[j + c * numProcs] == 1 || 
+                                parallelTestState[c + i * numProcs] == 1 ||
+                                parallelTestState[i + c * numProcs] == 1 ||
+                                parallelTestState[c + j * numProcs] == 1) {
+                                validPair = 0;
+                                break;
+                            }
+                        }
+
+                        if (!validPair) continue;
+
+                        // for SMT enabled CPUs, check sibling threads. will do later
+                        parallelTestState[j + i * numProcs] = 1;
+                        pairRunData[selectedParallelTestCount].processor1 = i;
+                        pairRunData[selectedParallelTestCount].processor2 = j;
+                        pairRunData[selectedParallelTestCount].iter = iter;
+                        pairRunData[selectedParallelTestCount].result = 0.0f;
+                        pairRunData[selectedParallelTestCount].target = bouncyArr + (512 * selectedParallelTestCount + 8 * offsetIdx);
+                        fprintf(stderr, "Selected %d -> %d\n", i, j);
+                        selectedParallelTestCount++;
+                    }
+                }
+            }
+            
+            if (selectedParallelTestCount == 0) break;
+
+            // launch threads
+            fprintf(stderr, "Selected %d pairs for parallel testing\n", selectedParallelTestCount);
+            pthread_t *testThreads = (pthread_t *)malloc(selectedParallelTestCount * sizeof(pthread_t));
+            memset(testThreads, 0, selectedParallelTestCount * sizeof(pthread_t));
+            for (int parallelIdx = 0; parallelIdx < selectedParallelTestCount; parallelIdx++) {
+                if (pairRunData[parallelIdx].processor1 == 0 && pairRunData[parallelIdx].processor2 == 0) break;
+                pthread_create(testThreads + parallelIdx, NULL, RunTest, (void *)(pairRunData + parallelIdx));
+            }
+
+            // join threads
+            for (int parallelIdx = 0; parallelIdx < selectedParallelTestCount; parallelIdx++) {
+                pthread_join(testThreads[parallelIdx], NULL);
+                int i = pairRunData[parallelIdx].processor1;
+                int j = pairRunData[parallelIdx].processor2;
+                latenciesPtr[j + i * numProcs] = pairRunData[parallelIdx].result;
+                parallelTestState[j + i * numProcs] = 2;
+            }
+
+            free(testThreads);
+        }
+    }
+
+>>>>>>> Stashed changes
       for (int offsetIdx = 0; offsetIdx < offsets; offsetIdx++) {
         float *latenciesPtr = latencies[offsetIdx];
         printf("Cache line offset: %d\n", offsetIdx);
@@ -92,8 +203,10 @@ int main(int argc, char *argv[]) {
         free(latenciesPtr);
     }
 
+    free(parallelTestState);
+    free(pairRunData);
     free(latencies);
-    free(bouncyBase);
+    free(bouncyArr);
     return 0;
 }
 
@@ -128,22 +241,40 @@ float TimeThreads(unsigned int proc1,
 }
 
 // test latency between two logical CPUs
+<<<<<<< Updated upstream
 float RunTest(unsigned int processor1, unsigned int processor2, uint64_t iter) {
   LatencyData lat1, lat2;
   float latency;
 
   *bouncy = 0;
+=======
+// float RunTest(unsigned int processor1, unsigned int processor2, uint64_t iter) {
+void *RunTest(void *param) {
+  LatencyPairRunData *pairRunData = (LatencyPairRunData *)param;
+  uint32_t processor1 = pairRunData->processor1;
+  uint32_t processor2 = pairRunData->processor2;
+  uint64_t iter = pairRunData->iter;
+  LatencyData lat1, lat2;
+  float latency;
+
+  *(pairRunData->target) = 0;
+>>>>>>> Stashed changes
   lat1.iterations = iter;
   lat1.start = 1;
-  lat1.target = bouncy;
+  lat1.target = pairRunData->target;
   lat1.processorIndex = processor1;
   lat2.iterations = iter;
   lat2.start = 2;
-  lat2.target = bouncy;
+  lat2.target = pairRunData->target;
   lat2.processorIndex = processor2;
+<<<<<<< Updated upstream
   latency = TimeThreads(processor1, processor2, iter, &lat1, &lat2, LatencyTestThread);
+=======
+  latency = TimeThreads(processor1, processor2, iter, &lat1, &lat2, NoLockLatencyTestThread);
+>>>>>>> Stashed changes
   fprintf(stderr, "%d to %d: %f ns\n", processor1, processor2, latency);
-  return latency;
+  pairRunData->result = latency;
+  return NULL;
 }
 
 void *LatencyTestThread(void *param) {
@@ -162,3 +293,22 @@ void *LatencyTestThread(void *param) {
 
     pthread_exit(NULL);
 }
+
+void *NoLockLatencyTestThread(void *param) {
+    LatencyData *latencyData = (LatencyData *)param;
+    cpu_set_t cpuset;
+    uint64_t current = latencyData->start;
+
+    CPU_ZERO(&cpuset);
+    CPU_SET(latencyData->processorIndex, &cpuset);
+    sched_setaffinity(gettid(), sizeof(cpu_set_t), &cpuset);
+
+    while (current <= 2 * latencyData->iterations) {
+        if (*(latencyData->target) == current - 1) {
+            *(latencyData->target) = current;
+            current += 2;
+        } 
+    }
+
+    pthread_exit(NULL);
+} 

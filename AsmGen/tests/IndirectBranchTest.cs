@@ -16,8 +16,13 @@ namespace AsmGen
             Description = "Indirect branch prediction";
             FunctionDefinitionParameters = "uint64_t iterations, uint32_t **arr, uint32_t arrLen, uint64_t **scratch";
             DivideTimeByCount = true;
+<<<<<<< Updated upstream
             branchCounts = new int[] { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512 };
             targetCounts = new int[] { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
+=======
+            branchCounts = new int[] { 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 };
+            targetCounts = new int[] { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128, 160, 192, 256, 384, 512 };
+>>>>>>> Stashed changes
             globalHistoryAssistBits = 4;
             this.assists = assist;
         }
@@ -367,7 +372,11 @@ namespace AsmGen
                     sb.AppendLine("extern uint64_t " + GetFunctionName(branchCounts[branchCountIdx], targetCounts[targetCountIdx]) + $"({FunctionDefinitionParameters}) __attribute((sysv_abi));");
 
             GenerateInitializationCode(sb);
+<<<<<<< Updated upstream
             string gccFunction = File.ReadAllText($"{Program.DataFilesDir}\\GccIndirectBranchFunction.c");
+=======
+            string gccFunction = File.ReadAllText(Path.Combine(Program.DataFilesDir, "GccIndirectBranchFunction.c"));
+>>>>>>> Stashed changes
             sb.AppendLine(gccFunction);
         }
 
@@ -415,7 +424,11 @@ namespace AsmGen
         {
             sb.AppendLine("  if (argc > 1 && strncmp(test_name, \"" + Prefix + "\", " + Prefix.Length + ") == 0) {");
             sb.AppendLine("    printf(\"" + Description + ":\\n\");");
+<<<<<<< Updated upstream
             string ibMain = File.ReadAllText($"{Program.DataFilesDir}\\IndirectBranchTestBlock.c");
+=======
+            string ibMain = File.ReadAllText(Path.Combine(Program.DataFilesDir, "IndirectBranchTestBlock.c"));
+>>>>>>> Stashed changes
             sb.AppendLine(ibMain);
             sb.AppendLine("  }\n");
         }

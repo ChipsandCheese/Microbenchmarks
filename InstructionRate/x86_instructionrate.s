@@ -28,6 +28,10 @@
 .global depaddimmtest
 .global addmultest
 .global jmpmultest
+<<<<<<< Updated upstream
+=======
+.global addjmptest
+>>>>>>> Stashed changes
 .global jmptest
 .global ntjmptest
 .global noptest
@@ -85,6 +89,10 @@
 .global store256
 .global store512
 .global loadscalar
+<<<<<<< Updated upstream
+=======
+.global mixedscalarloadstore
+>>>>>>> Stashed changes
 .global spacedstorescalar
 .global mixaddmul128int
 .global mixmul16mul64
@@ -92,6 +100,10 @@
 .global add128int
 .global mul128int
 .global mix256faddintadd
+<<<<<<< Updated upstream
+=======
+.global movqtoxmmtest
+>>>>>>> Stashed changes
 
 .global pdeptest
 .global pexttest
@@ -106,6 +118,13 @@
 
 .global fma4_256
 .global fma4_128
+<<<<<<< Updated upstream
+=======
+.global fdivtest
+.global fdivlattest
+.global fmuldenormtest
+.global fmuldenormlattest
+>>>>>>> Stashed changes
 
 /*
   %rdi = arg0 = iteration count
@@ -1170,6 +1189,80 @@ ntjmptest_jellydonut:
   pop %rsi
   ret
 
+<<<<<<< Updated upstream
+=======
+addjmptest:
+  push %rsi
+  push %rbx
+  push %rcx
+  push %rdx
+  push %r8
+  push %r9
+  push %r10
+  push %r11
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  mov $2, %r8
+  mov $20, %r9
+  xor %rbx, %rbx
+  xor %rcx, %rcx
+  xor %r11, %r11
+  xor %r12, %r12
+  xor %r13, %r13
+  xor %r14, %r14
+  xor %r15, %r15
+  xor %rsi, %rsi
+  mov %r8, %r10
+  mov %r8, %r11
+  mov %r8, %rsi
+  mov %r8, %rax
+  mov %r8, %rdx
+addjmptest_loop:
+  add %r8, %r10
+  add %r11, %r12
+  add %r13, %r14
+  jnz addjmptest_jellydonut
+
+  add %r8, %r10
+  add %r11, %r12
+  add %r13, %r14 
+  jnz addjmptest_jellydonut
+
+  add %r8, %r10
+  add %r11, %r12
+  add %r13, %r14 
+  jnz addjmptest_jellydonut
+
+  add %r8, %r10
+  add %r11, %r12
+  add %r13, %r14  
+  jnz addjmptest_jellydonut
+
+  add %r8, %r10
+  add %r11, %r12
+  add %r13, %r14    
+  jnz addjmptest_jellydonut
+
+  sub %r9, %rdi
+  jnz addjmptest_loop
+addjmptest_jellydonut:
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %r11
+  pop %r10
+  pop %r9
+  pop %r8
+  pop %rdx
+  pop %rcx
+  pop %rbx
+  pop %rsi
+  ret 
+
+>>>>>>> Stashed changes
 jmpmultest:
   push %rsi
   push %rbx
@@ -2104,7 +2197,11 @@ latadd128int_loop:
 
 add128int:
   push %r9
+<<<<<<< Updated upstream
   mov $20, %r9
+=======
+  mov $16, %r9
+>>>>>>> Stashed changes
   movq %r9, %xmm1
   //vpbroadcastq %xmm1, %xmm0
 add128int_loop:
@@ -2113,11 +2210,18 @@ add128int_loop:
   paddq %xmm2, %xmm2
   paddq %xmm3, %xmm3
   paddq %xmm4, %xmm4
+<<<<<<< Updated upstream
+=======
+  paddq %xmm5, %xmm5
+  paddq %xmm6, %xmm6
+  paddq %xmm7, %xmm7
+>>>>>>> Stashed changes
   paddq %xmm0, %xmm0
   paddq %xmm1, %xmm1
   paddq %xmm2, %xmm2
   paddq %xmm3, %xmm3
   paddq %xmm4, %xmm4
+<<<<<<< Updated upstream
   paddq %xmm0, %xmm0
   paddq %xmm1, %xmm1
   paddq %xmm2, %xmm2
@@ -2130,6 +2234,13 @@ add128int_loop:
   paddq %xmm4, %xmm4
   sub %r9, %rdi
   jnz add128int_loop
+=======
+  paddq %xmm5, %xmm5
+  paddq %xmm6, %xmm6
+  paddq %xmm7, %xmm7 
+  sub %r9, %rdi
+  jg add128int_loop
+>>>>>>> Stashed changes
   movq %xmm1, %rax
   pop %r9
   ret
@@ -4067,6 +4178,52 @@ spacedstorescalar_loop:
   pop %rbx
   ret
 
+<<<<<<< Updated upstream
+=======
+mixedscalarloadstore:
+  push %rbx
+  push %rcx
+  push %r8
+  push %r9
+  push %r10
+  push %r11
+  push %r12
+  push %r13
+  push %r14
+  push %r15
+  mov $12, %r9
+mixedscalarloadstore_loop:
+  mov (%rsi), %r15
+  mov 8(%rsi), %r14
+  mov %r9, 400(%rsi)
+
+  mov 16(%rsi), %r13
+  mov 24(%rsi), %r12
+  mov %r9, 408(%rsi)
+
+  mov 32(%rsi), %r11
+  mov 40(%rsi), %r10
+  mov %r9, 416(%rsi)
+
+  mov 48(%rsi), %r15
+  mov 56(%rsi), %r14
+  mov %r9, 424(%rsi)
+
+  sub %r9, %rdi
+  jg mixedscalarloadstore_loop
+  pop %r15
+  pop %r14
+  pop %r13
+  pop %r12
+  pop %r11
+  pop %r10
+  pop %r9
+  pop %r8
+  pop %rcx
+  pop %rbx
+  ret
+
+>>>>>>> Stashed changes
 
 spacedload128:
   push %rbx
@@ -5188,3 +5345,217 @@ fma4_128_loop:
   pop %r8
   pop %r9
   ret
+<<<<<<< Updated upstream
+=======
+
+
+
+fdivtest:
+  push %r9
+  push %r8
+  mov $20, %r9
+  cvtsi2ss %r9, %xmm6
+  movss %xmm6, %xmm5
+  movss %xmm6, %xmm7
+  movss %xmm6, %xmm8
+  movss %xmm6, %xmm9
+  movss %xmm6, %xmm10
+  movss %xmm6, %xmm11
+  movss %xmm6, %xmm12
+  movss %xmm6, %xmm13
+  movss %xmm6, %xmm14
+  movss %xmm6, %xmm15
+fdivtest_loop:
+  divss %xmm6, %xmm5 
+  divss %xmm6, %xmm7 
+  divss %xmm6, %xmm8 
+  divss %xmm6, %xmm9 
+  divss %xmm6, %xmm10
+  divss %xmm6, %xmm11
+  divss %xmm6, %xmm12
+  divss %xmm6, %xmm13
+  divss %xmm6, %xmm14
+  divss %xmm6, %xmm15
+  divss %xmm6, %xmm5 
+  divss %xmm6, %xmm7 
+  divss %xmm6, %xmm8 
+  divss %xmm6, %xmm9 
+  divss %xmm6, %xmm10
+  divss %xmm6, %xmm11
+  divss %xmm6, %xmm12
+  divss %xmm6, %xmm13
+  divss %xmm6, %xmm14
+  divss %xmm6, %xmm15
+  sub %r9, %rdi
+  jnz fdivtest_loop
+  movq %xmm1, %rax
+  pop %r8
+  pop %r9
+  ret 
+
+fdivlattest:
+  push %r9
+  push %r8
+  mov $20, %r9
+  cvtsi2ss %r9, %xmm6
+fdivlattest_loop:
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  divss %xmm6, %xmm6
+  sub %r9, %rdi
+  jnz fdivtest_loop
+  movq %xmm1, %rax
+  vzeroupper
+  pop %r8
+  pop %r9
+  ret
+
+fmuldenormlattest:
+  push %r9
+  push %r8
+  mov $0x00800000, %r9 /* smallest normal */
+  mov $0x3f000000, %r8 /* 0.5 */
+  movq %r9, %xmm6
+  movq %r8, %xmm7
+	mov $0x40000000, %r8 /* 2 */
+	movq %r8, %xmm4
+  mov $20, %r9
+fmuldenormlattest_loop:
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm5, %xmm6
+  mulss %xmm4, %xmm6
+  mulss %xmm4, %xmm6
+  mulss %xmm4, %xmm6
+  mulss %xmm4, %xmm6
+  mulss %xmm4, %xmm6
+  mulss %xmm4, %xmm6
+  mulss %xmm4, %xmm6
+  mulss %xmm4, %xmm6
+  sub %r9, %rdi
+  jnz fmuldenormlattest_loop
+  movq %xmm1, %rax
+  vzeroupper
+  pop %r8
+  pop %r9
+  ret
+
+fmuldenormtest:
+  push %r9
+  push %r8
+  mov $0x00800000, %r9
+  mov $0x3e4ccccd, %r8
+  movq %r9, %xmm6
+  movq %r8, %xmm7
+  movaps %xmm7, %xmm5
+  mov $20, %r9
+fmuldenormtest_loop:
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  mulss %xmm6, %xmm5
+  movaps %xmm7, %xmm5
+  sub %r9, %rdi
+  jnz fmuldenormtest_loop
+  movq %xmm1, %rax
+  vzeroupper
+  pop %r8
+  pop %r9
+  ret 
+
+movqtoxmmtest:
+  push %r9
+  push %r8
+  push %r10
+  mov $20, %r9
+  mov $123, %r10
+movqtoxmmtest_loop:
+  movq %r10, %xmm1
+  movq %xmm1, %r10
+  movq %r10, %xmm1
+  movq %xmm1, %r10 
+  movq %r10, %xmm1
+  movq %xmm1, %r10 
+  movq %r10, %xmm1
+  movq %xmm1, %r10 
+  movq %r10, %xmm1
+  movq %xmm1, %r10 
+  movq %r10, %xmm1
+  movq %xmm1, %r10
+  movq %r10, %xmm1
+  movq %xmm1, %r10 
+  movq %r10, %xmm1
+  movq %xmm1, %r10 
+  movq %r10, %xmm1
+  movq %xmm1, %r10 
+  movq %r10, %xmm1
+  movq %xmm1, %r10  
+  sub %r9, %rdi
+  jnz movqtoxmmtest_loop
+  movq %xmm1, %rax
+  pop %r10
+  pop %r8
+  pop %r9
+  ret 
+>>>>>>> Stashed changes

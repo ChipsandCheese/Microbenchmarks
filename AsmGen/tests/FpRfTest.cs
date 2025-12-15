@@ -4,18 +4,35 @@ namespace AsmGen
 {
     public class FpRfTest : UarchTest
     {
-        public FpRfTest(int low, int high, int step)
+        private bool initialDependentBranch;
+        public FpRfTest(int low, int high, int step, bool initialDependentBranch)
         {
             this.Counts = UarchTestHelpers.GenerateCountArray(low, high, step);
+<<<<<<< Updated upstream
             this.Prefix = "fprf";
             this.Description = "FP Register File";
+=======
+            this.Prefix = "fprf" + (initialDependentBranch ? "db" : string.Empty);
+            this.Description = "FP Register File" + (initialDependentBranch ? ", preceded by dependent branch" : string.Empty);
+>>>>>>> Stashed changes
             this.FunctionDefinitionParameters = "uint64_t iterations, int *arr, float *floatArr";
             this.GetFunctionCallParameters = "structIterations, A, fpArr";
             this.DivideTimeByCount = false;
+            this.initialDependentBranch = initialDependentBranch;
         }
 
         public override bool SupportsIsa(IUarchTest.ISA isa)
         {
+<<<<<<< Updated upstream
+=======
+            if (this.initialDependentBranch)
+            {
+                if (isa == IUarchTest.ISA.aarch64) return true;
+                if (isa == IUarchTest.ISA.riscv) return true;
+                return false;
+            }
+
+>>>>>>> Stashed changes
             if (isa == IUarchTest.ISA.amd64) return true;
             if (isa == IUarchTest.ISA.aarch64) return true;
             if (isa == IUarchTest.ISA.mips64) return true;
@@ -42,6 +59,10 @@ namespace AsmGen
             }
             else if (isa == IUarchTest.ISA.aarch64)
             {
+<<<<<<< Updated upstream
+=======
+                string postLoadInstrs = this.initialDependentBranch ? UarchTestHelpers.GetArmDependentBranch(this.Prefix) : null;
+>>>>>>> Stashed changes
                 string initInstrs = "  ldr s17, [x2]\n" +
                     "  ldr s18, [x2, 4]\n" +
                     "  ldr s19, [x2, 8]\n" +
@@ -53,7 +74,13 @@ namespace AsmGen
                 unrolledAdds[1] = "  fadd s19, s19, s17";
                 unrolledAdds[2] = "  fadd s20, s20, s17";
                 unrolledAdds[3] = "  fadd s21, s21, s17";
+<<<<<<< Updated upstream
                 UarchTestHelpers.GenerateArmAsmStructureTestFuncs(sb, this.Counts, this.Prefix, unrolledAdds, unrolledAdds, includePtrChasingLoads: false, initInstrs);
+=======
+                UarchTestHelpers.GenerateArmAsmStructureTestFuncs(
+                    sb, this.Counts, this.Prefix, unrolledAdds, unrolledAdds, includePtrChasingLoads: false, initInstrs, postLoadInstrs1: postLoadInstrs, postLoadInstrs2: postLoadInstrs);
+                if (this.initialDependentBranch) sb.AppendLine(UarchTestHelpers.GetArmDependentBranchTarget(this.Prefix));
+>>>>>>> Stashed changes
             }
             else if (isa == IUarchTest.ISA.mips64)
             {
@@ -72,6 +99,11 @@ namespace AsmGen
             }
             else if (isa == IUarchTest.ISA.riscv)
             {
+<<<<<<< Updated upstream
+=======
+                string postLoadInstrs = this.initialDependentBranch ? UarchTestHelpers.GetRiscvDependentBranch(this.Prefix) : null;
+                if (this.initialDependentBranch) sb.AppendLine(UarchTestHelpers.GetRiscvDependentBranchTarget(this.Prefix));
+>>>>>>> Stashed changes
                 string initInstrs = "  fld f0, (x12)\n" +
                     "  fld f1, 8(x12)\n" +
                     "  fld f2, 16(x12)\n" +
@@ -83,7 +115,12 @@ namespace AsmGen
                 unrolledAdds[1] = "  fadd.s f1, f1, f4";
                 unrolledAdds[2] = "  fadd.s f2, f2, f4";
                 unrolledAdds[3] = "  fadd.s f3, f3, f4";
+<<<<<<< Updated upstream
                 UarchTestHelpers.GenerateRiscvAsmStructureTestFuncs(sb, this.Counts, this.Prefix, unrolledAdds, unrolledAdds, includePtrChasingLoads: false, initInstrs);
+=======
+                UarchTestHelpers.GenerateRiscvAsmStructureTestFuncs(sb, this.Counts, this.Prefix, unrolledAdds, unrolledAdds, 
+                    includePtrChasingLoads: false, initInstrs, postLoadInstrs1: postLoadInstrs, postLoadInstrs2: postLoadInstrs);
+>>>>>>> Stashed changes
             }
         }
     }

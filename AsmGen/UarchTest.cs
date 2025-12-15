@@ -29,12 +29,31 @@ namespace AsmGen
         public void GenerateExternLines(StringBuilder sb)
         {
             for (int i = 0; i < Counts.Length; i++)
-                sb.AppendLine("extern uint64_t " + Prefix + Counts[i] + $"({FunctionDefinitionParameters}) __attribute((sysv_abi));"); ;
+            {
+                sb.AppendLine("extern uint64_t " + Prefix + Counts[i] + $"({FunctionDefinitionParameters}) __attribute((sysv_abi));");
+
+                // Function that can be launched in a pthread
+                sb.AppendLine($"void *{IUarchTest.ThreadLaunchFunctionPrefix}{Prefix}{Counts[i]}(void *pa)");
+                sb.AppendLine("{");
+                sb.AppendLine("    struct ThreadData *td = (struct ThreadData *)pa;");
+                sb.AppendLine("    int *A = td->A;");
+                sb.AppendLine("    int *B = td->B;");
+                sb.AppendLine("    float *fpArr = td->fpArr;");
+                sb.AppendLine("    uint32_t list_size = td->list_size;");
+                sb.AppendLine("    int structIterations = td->structIterations;");
+                sb.AppendLine("    " + Prefix + Counts[i] + $"({GetFunctionCallParameters});");
+                sb.AppendLine("    return NULL;");
+                sb.AppendLine("}");
+            }
         }
 
         public void GenerateTestBlock(StringBuilder sb, IUarchTest.ISA isa)
         {
+<<<<<<< Updated upstream
             sb.AppendLine("  if (argc > 1 && strncmp(test_name, \"" + Prefix + "\", " + Prefix.Length + ") == 0) {");
+=======
+            sb.AppendLine("  if (argc > 1 && strcmp(test_name, \"" + Prefix + "\") == 0) {");
+>>>>>>> Stashed changes
             sb.AppendLine("    printf(\"" + Description + ":\\n\");");
 
             if (isa == IUarchTest.ISA.mips64 || isa == IUarchTest.ISA.riscv)
@@ -55,9 +74,31 @@ namespace AsmGen
                 }
 
                 sb.AppendLine("    gettimeofday(&startTv, &startTz);");
+                sb.AppendLine("#ifndef __MINGW32__");
+                sb.AppendLine("    if (threads > 1) {");
+                sb.AppendLine("        struct ThreadData testThreadData;");
+                sb.AppendLine("        pthread_t *testThreads = (pthread_t *)malloc(threads * sizeof(pthread_t));");
+                sb.AppendLine("        testThreadData.A = A;");
+                sb.AppendLine("        testThreadData.B = B;");
+                sb.AppendLine("        testThreadData.fpArr = fpArr;");
+                sb.AppendLine("        testThreadData.list_size = list_size;");
+                sb.AppendLine("        testThreadData.structIterations = structIterations;");
+                sb.AppendLine("        for (int threadIdx = 0; threadIdx < threads; threadIdx++) {");
+                sb.AppendLine($"            pthread_create(testThreads + threadIdx, NULL, {IUarchTest.ThreadLaunchFunctionPrefix}{Prefix}{Counts[i]}, &testThreadData);");
+                sb.AppendLine("        }");
+                sb.AppendLine("        for (int threadIdx = 0; threadIdx < threads; threadIdx++) {");
+                sb.AppendLine("             pthread_join(testThreads[threadIdx], NULL);");
+                sb.AppendLine("        }");
+                sb.AppendLine("        free(testThreads);");
+                // launch threads
+                sb.AppendLine("    } else ");
+                sb.AppendLine("        " + Prefix + Counts[i] + $"({GetFunctionCallParameters});");
+                sb.AppendLine("#else");
                 sb.AppendLine("    " + Prefix + Counts[i] + $"({GetFunctionCallParameters});");
+                sb.AppendLine("#endif");
                 sb.AppendLine("    gettimeofday(&endTv, &endTz);");
                 sb.AppendLine("    time_diff_ms = 1000 * (endTv.tv_sec - startTv.tv_sec) + ((endTv.tv_usec - startTv.tv_usec) / 1000);");
+                //sb.AppendLine("    fprintf(stderr, \"%lu ms elapsed, %lu iter\\n\", time_diff_ms, structIterations);");
                 if (DivideTimeByCount)
                     sb.AppendLine("    latency = 1e6 * (float)time_diff_ms / (float)(iterations);");
                 else

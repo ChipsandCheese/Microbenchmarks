@@ -14,7 +14,26 @@ namespace AsmGen
             this.DivideTimeByCount = false;
         }
 
-        public override void GenerateX86GccAsm(StringBuilder sb)
+        public override bool SupportsIsa(IUarchTest.ISA isa)
+        {
+            if (isa == IUarchTest.ISA.amd64) return true;
+            if (isa == IUarchTest.ISA.aarch64) return true;
+            return false;
+        }
+
+        public override void GenerateAsm(StringBuilder sb, IUarchTest.ISA isa)
+        {
+            if (isa == IUarchTest.ISA.amd64)
+            {
+                GenerateX86Asm(sb);
+            }
+            else if (isa == IUarchTest.ISA.aarch64)
+            {
+                GenerateArmAsm(sb);
+            }
+        }
+
+        public void GenerateX86Asm(StringBuilder sb)
         {
             string[] dependentLoads = new string[2];
             dependentLoads[0] = "  mov (%r9, %rdx, 4), %r15";
@@ -23,16 +42,7 @@ namespace AsmGen
             UarchTestHelpers.GenerateX86AsmDivStructureTestFuncs(sb, this.Counts, this.Prefix, dependentLoads, dependentLoads, false);
         }
 
-        public override void GenerateX86NasmAsm(StringBuilder sb)
-        {
-            string[] dependentLoads = new string[2];
-            dependentLoads[0] = "  mov r15, [r9 + rdx * 4]";
-            dependentLoads[1] = "  mov [r8 + rdx * 4], r14";
-
-            UarchTestHelpers.GenerateX86NasmDivStructureTestFuncs(sb, this.Counts, this.Prefix, dependentLoads, dependentLoads, false);
-        }
-
-        public override void GenerateArmAsm(StringBuilder sb)
+        public void GenerateArmAsm(StringBuilder sb)
         {
             string[] dependentLoads = new string[2];
             dependentLoads[0] = "  ldr w15, [x3, w25, uxtw #2]";

@@ -1,8 +1,100 @@
-// unused but here as a reference. suffers from loop overhead on AMD cards
-__kernel void simple_latency_test(__global const int* A, int count, __global int* ret) {
-    int current = A[0];
+// not used, I tried
+__constant sampler_t direct_sampler = CLK_NORMALIZED_COORDS_FALSE | // coordinates are from 0 to max dimension size
+                                        CLK_ADDRESS_NONE | // if it goes out of bounds feel free to explode and die
+                                        CLK_FILTER_NEAREST;
+__kernel void tex_latency_test(__read_only image1d_buffer_t A, int count, __global int* ret, int list_size) {
+    int localId = get_local_id(0);
+    // uint4 current = read_imageui(A, direct_sampler, 0); // using sampler screws things up
+    int startPos = get_global_size(0) > 1 ? ret[get_global_id(0)] : 0;
+    uint4 current = read_imageui(A, startPos);
+    // printf("start x: %u -> %u\n", startPos, current.x);
+    for (int i = 0; i < count; i += 10) {
+        // printf("current: %u %u %u %u, address: %d\n", current.x, current.y, current.z, current.w, (int)current.x / 4);
+        //current = read_imageui(A, direct_sampler, i);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        current = read_imageui(A, current.x);
+        //printf("%d: current read: %u %u %u %u\n", i, current.x, current.y, current.z, current.w);
+        // local_a[localId] = current;
+    }
+
+    ret[get_global_id(0)] = current.x;
+}
+
+__constant sampler_t funny_sampler = CLK_NORMALIZED_COORDS_TRUE | // coordinates are from 0 to 1 (float)
+                                        CLK_ADDRESS_REPEAT | // going out of bounds = replicate
+                                        CLK_FILTER_NEAREST;
+__kernel void tex_bw_test(__read_only image2d_t A, int count, __global float* ret) {
+    int localId = get_local_id(0);
+    float pos = get_global_id(0) * native_recip((float)get_global_size(0));
+    float2 increment;
+    increment.x = 0.01; // guessing
+    increment.y = 0.01;
+
+    float2 current0, current1, current2, current3;
+    current0.x = pos;
+    current0.y = pos;
+    current1.x = 0.1 + (localId / 10000);
+    current1.y = 0.1 + (localId / 10000);
+    current2.x = 0.01 + (localId / 10000);
+    current2.y = 0.01 + (localId / 10000);
+    current3.x = 0.002 + (localId / 5000);
+    current3.y = 0.001 + (localId / 5000);
+
+    float4 tmp0 = read_imagef(A, funny_sampler, current0);
+    float4 tmp1 = read_imagef(A, funny_sampler, current1);
+    float4 tmp2 = read_imagef(A, funny_sampler, current2);
+    float4 tmp3 = read_imagef(A, funny_sampler, current3);
+    for (int i = 0; i < count; i += 4)
+    {
+        tmp0 += read_imagef(A, funny_sampler, current0);
+        tmp1 += read_imagef(A, funny_sampler, current1);
+        tmp2 += read_imagef(A, funny_sampler, current2);
+        tmp3 += read_imagef(A, funny_sampler, current3);
+        current0 += increment;
+        current1 += increment;
+        current2 += increment;
+        current3 += increment;
+    }
+
+    *ret = dot(tmp0, tmp1) + dot(tmp2, tmp3);
+}
+
+// Cacheline size in bytes, must correspond to what's defined for the latency test
+#define CACHELINE_SIZE 64
+
+// unrolled until terascale no longer saw further improvement (10x unroll)
+// assumes count will be a multiple of 10. but it won't be too inaccurate with a big count
+// not divisible by 10
+__kernel void unrolled_latency_test(__global const int* A, int count, __global int* ret) {
+    int current = get_global_size(0) > 1 ? ret[get_global_id(0)]: A[0]; // this will test vector latency on AMD. Set to A[0] for scalar latency
     int result;
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i += 10) {
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
+        result += current;
+        current = A[current];
         result += current;
         current = A[current];
     }
@@ -10,6 +102,7 @@ __kernel void simple_latency_test(__global const int* A, int count, __global int
     ret[0] = result;
 }
 
+<<<<<<< Updated upstream
 // not used, I tried
 __constant sampler_t direct_sampler = CLK_NORMALIZED_COORDS_FALSE | // coordinates are from 0 to max dimension size
                                         CLK_ADDRESS_NONE | // if it goes out of bounds feel free to explode and die
@@ -117,6 +210,11 @@ __kernel void unrolled_latency_test(__global const int* A, int count, __global i
 __kernel void unrolled_latency_test_amdvectorworkaround(__global const int* A, int count, __global int* ret) {
     int start = A[1 + get_local_id(0)]; // only the first element in a 64B line is nonzero, but the compiler can't determine that
     int current = A[start];
+=======
+// Ensures the loaded value will be constant across a workgroup
+__kernel void scalar_unrolled_latency_test(__global const int* A, int count, __global int* ret) {
+    int current = get_num_groups(0) > 1 ? ret[get_group_id(0) * get_local_size(0)]: A[0];
+>>>>>>> Stashed changes
     int result;
     for (int i = 0; i < count; i += 10) {
         result += current;
@@ -302,6 +400,11 @@ __kernel void local_bw_test(__global float* A, uint count, __global float* ret) 
     float acc2 = 2.2;
     float acc3 = 3.3;
     float acc4 = 4.4;
+<<<<<<< Updated upstream
+=======
+
+    //printf("subgroup size %d\n", get_sub_group_size());
+>>>>>>> Stashed changes
 
     // workgroup-wide copy from global mem into local mem
     for (int i = get_local_id(0);i < local_mem_bw_test_size; i += get_local_size(0))
