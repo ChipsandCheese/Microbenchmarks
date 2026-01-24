@@ -19,6 +19,9 @@ riscv64:
 termux:
 	clang -march=armv8+aes arm_instructionrate.s arm_instructionrate.c -o InstructionRate_aarch64 $(LDFLAGS)
 
+ppc64:
+	$(CC) $(CFLAGS) -mcpu=native -c ppc64_instructionrate_tests.c -S ppc64_instructionrate_tests.s
+	$(CC) $(CFLAGS) -mcpu=native ppc64_instructionrate_tests.s ppc64_instructionrate.c -o ppc64_instructionrate $(LDFLAGS)
 amd64_fusion:
 	$(CC) $(CFLAGS) x86_fusion.s x86_fusion.c -o InstructionRateFusion_amd64 $(LDFLAGS)
 
